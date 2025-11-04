@@ -1,3 +1,8 @@
+# data, logs and configuration files
+data/
+lightning_logs/
+.github/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

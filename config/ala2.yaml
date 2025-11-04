@@ -1,0 +1,71 @@
+model_config:
+  module_name: split_flows.models.SplitFlow
+
+  aa_topology_path: data/ala2/ala2.pdb
+  cg_topology_path: data/ala2/ala2_ramachandran.pdb
+
+  latent_noise: 0.04
+  latent_groupings:
+    - [4, [0, 1, 2, 3, 5]]
+    - [6, [7]]
+    - [8, [9, 10, 11, 12, 13]]
+    - [14, [15]]
+    - [16, [17, 18, 19, 20, 21]]
+  velo_net_hidden_dim: 64
+  velo_net_depth: 4
+  velo_net_fourier_features: 6
+
+  sigma: 0.0
+  interpolation: linear
+
+  optimizer:
+    module_name: torch.optim.Adam
+    kwargs:
+      lr: 0.0001
+      weight_decay: 0.0
+
+  scheduler:
+    module_name: torch.optim.lr_scheduler.ExponentialLR
+    kwargs:
+      gamma: 0.999
+
+  checkpoint:
+    monitor: validation/loss
+    save_last: true
+    save_top_k: 5
+    save_every_n_epochs: 50
+
+run_config:
+  trainer:
+    accelerator: gpu # use gpu
+    max_epochs: 5_000 # number of epochs to train
+    precision: 32 # model weight precision (should be the same as dataset precision)
+
+  logger:
+    project: ConnectingResolutions # name of the project in your w&b profile
+    log_model: true # whether to log the model to w&b
+    offline: false # whether to upload the logs to w&b
+
+data_config:
+  module_name: split_flows.data.MDTrajectoryData
+  trajectory_path: data/ala2/md_simulations/temperature=600K_timestep=2ps/alanine_dipeptide_trajectory.dcd
+  topology_path: data/ala2/ala2_in_water.pdb
+  remove_solvent: True
+  superpose: True
+  center_coordinates: True
+  prune_hydrogens: False
+  loader:
+    batch_size: 64
+    shuffle: True
+    num_workers: 0
+  split: [0.6, 0.2, 0.2]
+  seed: 42
+
+hydra:
+  job:
+    name: AlanineDipeptideRamachandranSplitFlow
+  run:
+    dir: lightning_logs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: lightning_logs/${hydra.job.name}
+    subdir: ${hydra.job.override_dirname}
