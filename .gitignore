@@ -1,7 +1,7 @@
 # data, logs and configuration files
-data/
 lightning_logs/
 .github/
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -47,7 +47,7 @@ run_config:
     offline: false # whether to upload the logs to w&b
 
 data_config:
-  module_name: split_flows.data.MDTrajectoryData
+  module_name: split_flows.dataset.MDTrajectoryData
   trajectory_path: data/ala2/md_simulations/temperature=600K_timestep=2ps/alanine_dipeptide_trajectory.dcd
   topology_path: data/ala2/ala2_in_water.pdb
   remove_solvent: True
