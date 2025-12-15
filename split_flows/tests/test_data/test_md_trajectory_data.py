@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from split_flows.data.md_trajectory_data import (
+from split_flows.dataset.md_trajectory_data import (
     MDTrajectoryData,
     MDTrajectoryDataHparams,
 )

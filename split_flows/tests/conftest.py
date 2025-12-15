@@ -275,7 +275,7 @@ def basic_md_hparams(mock_trajectory_files):
 
     :param mock_trajectory_files: Mock trajectory files fixture.
     :return: MDTrajectoryDataHparams instance."""
-    from split_flows.data.md_trajectory_data import MDTrajectoryDataHparams
+    from split_flows.dataset.md_trajectory_data import MDTrajectoryDataHparams
 
     traj_path, top_path = mock_trajectory_files
     return MDTrajectoryDataHparams(

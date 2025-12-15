@@ -42,55 +42,6 @@ class ContinuousFlowMixin(ABC):
 
         return vt, div_vt
 
-    @torch.no_grad()
-    def compute_volume_change(
-        self,
-        x0: Tensor,
-        chunk_size: int | None = None,
-        method: Literal["euler", "rk4"] = "euler",
-        step_size: float = 1e-1,
-        return_intermediate: bool = False,
-    ) -> tuple[Tensor, Tensor]:
-        """Compute the volume change integrating the flow from (x0, 0) to (x1, 1).
-
-        :param x0: Starting coordinates of the system.
-        :param chunk_size: Optional chunk size for processing large batch sizes.
-        :return: End point sample and volume change per sample: (B,)"""
-
-        def ode_func(t, y):
-            vt, divt = self.divergence(y[0], t)
-            return (vt.detach(), divt.detach())
-
-        if chunk_size is None:
-            chunk_size = int(x0.shape[0])
-
-        time_grid = torch.linspace(0, 1, int(1 / step_size) + 1, device=x0.device)
-        div0 = torch.zeros(x0.shape[0], device=x0.device)
-
-        sol = torch.zeros((time_grid.shape[0], *x0.shape), device=x0.device)
-        volume_change = torch.zeros((time_grid.shape[0], x0.shape[0]), device=x0.device)
-        for i in tqdm(range(0, x0.shape[0], chunk_size)):
-            end = min(i + chunk_size, x0.shape[0])
-            sol_i, volume_change_i = cast(
-                Tensor,
-                odeint(
-                    ode_func,
-                    (x0[i:end], div0[i:end]),
-                    time_grid,
-                    method=method,
-                    options={"step_size": step_size},
-                ),
-            )
-            sol[:, i:end] = sol_i
-            volume_change[:, i:end] = volume_change_i
-
-        volume_change *= -1
-
-        if return_intermediate:
-            return sol, volume_change
-
-        return sol[-1], volume_change[-1]
-
     def compute_flow(
         self,
         x0: Tensor,
@@ -135,4 +86,65 @@ class ContinuousFlowMixin(ABC):
             )
             sol[:, i:end] = sol_i
 
-        return sol
+        if return_intermediate:
+            return sol
+
+        return sol[-1]
+
+    # @torch.no_grad()
+    def compute_volume_change(
+        self,
+        x0: Tensor,
+        chunk_size: int | None = None,
+        method: Literal["euler", "rk4"] = "euler",
+        step_size: float = 1e-1,
+        reverse: bool = False,
+        return_intermediate: bool = False,
+        verbose: bool = True,
+    ) -> tuple[Tensor, Tensor]:
+        """Compute the volume change integrating the flow from (x0, 0) to (x1, 1).
+
+        :param x0: Starting coordinates of the system.
+        :param chunk_size: Optional chunk size for processing large batch sizes.
+        :return: End point sample and volume change per sample: (B,)"""
+
+        def ode_func(t, y):
+            vt, divt = self.divergence(y[0], t)
+            return (vt, divt)
+
+        if chunk_size is None:
+            chunk_size = int(x0.shape[0])
+
+        time_grid = torch.linspace(0, 1, int(1 / step_size) + 1, device=x0.device)
+
+        if reverse:
+            time_grid = torch.flip(time_grid, dims=(0,))
+
+        div0 = torch.zeros(x0.shape[0], device=x0.device)
+        sol = torch.zeros((time_grid.shape[0], *x0.shape), device=x0.device)
+        volume_change = torch.zeros((time_grid.shape[0], x0.shape[0]), device=x0.device)
+
+        iterator = range(0, x0.shape[0], chunk_size)
+        if verbose:
+            iterator = tqdm(iterator)
+        for i in iterator:
+            end = min(i + chunk_size, x0.shape[0])
+            sol_i, volume_change_i = cast(
+                Tensor,
+                odeint(
+                    ode_func,
+                    (x0[i:end], div0[i:end]),
+                    time_grid,
+                    method=method,
+                    options={"step_size": step_size},
+                ),
+            )
+            sol[:, i:end] = sol_i
+            volume_change[:, i:end] = volume_change_i
+
+        volume_change *= -1
+
+        if return_intermediate:
+            return sol, volume_change
+
+        return sol[-1], volume_change[-1]
