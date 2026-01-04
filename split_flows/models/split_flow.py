@@ -8,8 +8,6 @@ import logging
 
 from math import sqrt, pi
 
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 import scienceplots  # noqa: F401
 import torch
 from torch import Tensor
@@ -74,9 +72,9 @@ class NoiseAugmentation(Distribution):
         :return: Full set of coordinates with noise."""
 
         z = torch.empty((R.shape[0], self.num_particles, R.shape[2]), device=R.device)
-        z_gmm = torch.tensor(gmm.sample(R.shape[0])[0], dtype=R.dtype, device=R.device).view(
-            R.shape[0], -1, 3
-        )
+        z_gmm = torch.tensor(
+            gmm.sample(R.shape[0])[0], dtype=R.dtype, device=R.device
+        ).view(R.shape[0], -1, 3)
 
         start_idx = 0
         for i, (cg_idx, noise_idx) in enumerate(self.latent_groupings):
@@ -117,7 +115,9 @@ class NoiseAugmentation(Distribution):
             R_cg = value[:, cg_idx, :]
             R_noise = value[:, noise_idx, :]
             exponential_term = (
-                -0.5 * sum_except_batch((R_noise - R_cg[:, None, :]) ** 2) / self.scale**2
+                -0.5
+                * sum_except_batch((R_noise - R_cg[:, None, :]) ** 2)
+                / self.scale**2
             )
             normalization_term = -torch.log(Z) * R_noise.shape[1]
             log_prob += exponential_term + normalization_term
@@ -266,7 +266,9 @@ class SplitFlow(Model[SplitFlowHparams], ContinuousFlowMixin):
 
         return self.velo_net(xt, t)
 
-    def compute_metrics(self, batch: tuple[Tensor, ...], batch_idx: int) -> dict[str, Tensor]:
+    def compute_metrics(
+        self, batch: tuple[Tensor, ...], batch_idx: int
+    ) -> dict[str, Tensor]:
         """Compute training/validation metrics.
 
         :param batch: Batch data tuple, expecting (r,) where r is a Tensor.
