@@ -34,3 +34,19 @@ To install the project dependencies use uv (if you have not installed uv yet, ch
 ```bash
 uv sync
 ```
+
+## Citation
+
+If you use split-flows in your research, please cite:
+
+```bibtex
+@misc{hummerich2025splitflowsmeasuretransportinformation,
+      title={Split-Flows: Measure Transport and Information Loss Across Molecular Resolutions},
+      author={Sander Hummerich and Tristan Bereau and Ullrich Köthe},
+      year={2025},
+      eprint={2511.01464},
+      archivePrefix={arXiv},
+      primaryClass={physics.chem-ph},
+      url={https://arxiv.org/abs/2511.01464},
+}
+```
