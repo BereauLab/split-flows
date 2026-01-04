@@ -289,47 +289,7 @@ class SplitFlow(Model[SplitFlowHparams], ContinuousFlowMixin):
         metrics["loss_fm"] = sum_except_batch(torch.pow(vt_hat - vt, 2)).mean()
         metrics["loss"] += metrics["loss_fm"]
 
-        if batch_idx == 0 and not self.training and self.logger is not None:
-            R = R[0].unsqueeze(0).repeat(128, 1, 1)
-            self.logger.log_image("path_sample", [self.plot_interpolation(R)])  # type: ignore
-
         return metrics
-
-    @torch.no_grad()
-    def plot_interpolation(self, R: Tensor) -> Figure:
-        """Plots path samples starting from the given coordinates.
-
-        :param R: Coarse-grained coordinates.
-        :return: Figure containing the path samples."""
-
-        with plt.style.context(["science", "nature"]):
-            sol = self.compute_flow(self.noise.augment(R))
-            sol = sol.cpu()
-
-            fig, axes = plt.subplots(
-                1,
-                len(sol),
-                figsize=(len(sol) * 3.3, 2.5),
-                sharex=True,
-                sharey=True,
-                subplot_kw=dict(projection="3d"),
-            )
-
-            for i in range(len(sol)):
-                ax = axes[i]
-                coors = sol[i]
-                ax.scatter(
-                    coors[:128, :, 0],
-                    coors[:128, :, 1],
-                    coors[:128, :, 2],
-                    alpha=1 / R.shape[0],
-                    rasterized=True,
-                )
-                ax.set_xlim(-0.6, 0.6)
-                ax.set_ylim(-0.6, 0.6)
-                ax.set_zlim(-0.6, 0.6)
-
-            return fig
 
     @property
     def num_particles(self) -> int:

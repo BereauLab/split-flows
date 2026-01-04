@@ -49,6 +49,8 @@ class ContinuousFlowMixin(ABC):
         method: Literal["euler", "rk4"] = "euler",
         step_size: float = 1e-1,
         reverse: bool = False,
+        return_intermediate: bool = False,
+        verbose: bool = True,
     ) -> Tensor:
         """Compute path samples using the ODE solver starting from the given coordinates. Returns
         samples of the path at the specified time grid.
@@ -58,6 +60,8 @@ class ContinuousFlowMixin(ABC):
         :param method: ODE solver method to use.
         :param step_size: Step size for the ODE solver.
         :param reverse: Whether to compute the flow in reverse (from x1 to x0).
+        :param return_intermediate: Whether to return all intermediate samples or just the final one.
+        :param verbose: Whether to display a progress bar.
         :return: Path samples at the specified time grid."""
 
         time_grid = torch.linspace(0, 1, int(1 / step_size) + 1, device=x0.device)
@@ -72,7 +76,11 @@ class ContinuousFlowMixin(ABC):
             chunk_size = int(x0.shape[0])
 
         sol = torch.zeros((time_grid.shape[0], *x0.shape), device=x0.device)
-        for i in tqdm(range(0, x0.shape[0], chunk_size)):
+
+        iterator = range(0, x0.shape[0], chunk_size)
+        if verbose:
+            iterator = tqdm(iterator)
+        for i in iterator:
             end = min(i + chunk_size, x0.shape[0])
             sol_i = cast(
                 Tensor,
@@ -106,6 +114,11 @@ class ContinuousFlowMixin(ABC):
 
         :param x0: Starting coordinates of the system.
         :param chunk_size: Optional chunk size for processing large batch sizes.
+        :param method: ODE solver method to use.
+        :param step_size: Step size for the ODE solver.
+        :param reverse: Whether to compute the flow in reverse (from x1 to x0).
+        :param return_intermediate: Whether to return all intermediate samples or just the final one.
+        :param verbose: Whether to display a progress bar.
         :return: End point sample and volume change per sample: (B,)"""
 
         def ode_func(t, y):

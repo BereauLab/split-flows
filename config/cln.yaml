@@ -1,0 +1,85 @@
+model_config:
+  module_name: split_flows.models.SplitFlow
+
+  aa_topology_path: data/cln/cln_heavy_atoms.pdb
+  cg_topology_path: data/cln/cln_calpha.pdb
+
+  latent_noise: 0.04
+  latent_groupings:
+    [
+      [1, [0, 2, 3]],
+      [5, [4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]],
+      [17, [16, 18, 19, 20, 21, 22, 23]],
+      [25, [24, 26, 27, 28, 29, 30]],
+      [32, [31, 33, 34, 35, 36, 37, 38, 39]],
+      [41, [40, 42, 43, 44, 45, 46]],
+      [48, [47, 49, 50]],
+      [52, [51, 53, 54, 55, 56, 57]],
+      [59, [58, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71]],
+      [73, [72, 74, 75, 76]],
+    ]
+  velo_net_hidden_dim: 32
+  velo_net_depth: 6
+  velo_net_fourier_features: 6
+
+  sigma: 0.0
+  interpolation: linear
+
+  optimizer:
+    module_name: torch.optim.AdamW
+    kwargs:
+      lr: 0.0003
+      weight_decay: 0.001
+
+  scheduler:
+    #module_name: torch.optim.lr_scheduler.ExponentialLR
+    #kwargs:
+    #  gamma: 0.997
+    module_name: torch.optim.lr_scheduler.OneCycleLR
+    kwargs:
+      max_lr: 0.0003
+      total_steps: 2000
+      steps_per_epoch: 1
+      # div_factor: 10.0
+
+  checkpoint:
+    monitor: validation/loss
+    save_last: true
+    save_top_k: 5
+    save_every_n_epochs: 1
+
+run_config:
+  trainer:
+    accelerator: gpu # use gpu
+    max_epochs: 2_000 # number of epochs to train
+    precision: 32 # model weight precision (should be the same as dataset precision)
+
+  logger:
+    project: ConnectingResolutions # name of the project in your w&b profile
+    log_model: true # whether to log the model to w&b
+    offline: false # whether to upload the logs to w&b
+
+data_config:
+  module_name: split_flows.dataset.MDTrajectoryData
+  trajectory_path: data/cln/md_simulations/temperature=360K_timestep=2ps/chignolin_trajectory.dcd
+  topology_path: data/cln/cln_in_water.pdb
+  remove_solvent: True
+  superpose: True
+  center_coordinates: True
+  prune_hydrogens: True
+  stride: 10
+  loader:
+    batch_size: 64
+    shuffle: True
+    num_workers: 0
+  split: [0.6, 0.2, 0.2]
+  seed: 42
+
+hydra:
+  job:
+    name: ClnSplitFlow
+  run:
+    dir: lightning_logs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
+  sweep:
+    dir: lightning_logs/${hydra.job.name}
+    subdir: ${hydra.job.override_dirname}
