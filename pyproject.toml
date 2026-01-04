@@ -1,0 +1,18 @@
+[project]
+name = "split-flows"
+version = "0.1.0"
+description = "Split-flows"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "egnn-pytorch==0.2.8",
+    "hydrantic",
+    "mdtraj>=1.10.3",
+    "moleculekit>=1.11.1",
+    "scienceplots>=2.2.0",
+    "scikit-learn>=1.7.2",
+    "torchdiffeq==0.2.5",
+]
+
+[tool.uv.sources]
+hydrantic = { git = "https://github.com/hummerichsander/hydrantic.git" }
