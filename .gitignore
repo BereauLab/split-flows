@@ -211,3 +211,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# UV virtual environment
+.venv/
+
+# Micromamba
+environment.yml

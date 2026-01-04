@@ -2,9 +2,7 @@ name: UV Environment Installation Check
 
 on:
   push:
-    branches: [public]
   pull_request:
-    branches: [public]
 
 jobs:
   check-uv-install:

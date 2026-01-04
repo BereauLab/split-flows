@@ -2,9 +2,7 @@ name: Tests
 
 on:
   push:
-    branches: [public]
   pull_request:
-    branches: [public]
 
 jobs:
   test:
