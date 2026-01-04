@@ -16,6 +16,21 @@
 
 Split-flows provide a probabilistic bridge between molecular resolutions, enabling conditional backmapping and direct measurement of the configuration-dependent (local) information loss.
 
-![Figure 1](figures/Figure_1.png)
+<div align="center">
+    <img src="figures/Figure_1.png" alt="Figure 1" style="max-width: 500px; width: 100%;">
+</div>
 
 ## Installation
+
+Clone the repository and navigate to the project directory:
+
+```bash
+git clone git@github.com:hummerichsander/split-flows.git
+cd split-flows
+```
+
+To install the project dependencies use uv (if you have not installed uv yet, check out the [uv documentation](https://docs.astral.sh/uv/getting-started/installation/)) and run:
+
+```bash
+uv sync
+```
