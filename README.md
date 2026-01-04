@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Python Version](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)
+![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
 ![UV Install Check](https://github.com/hummerichsander/split-flows/actions/workflows/uv-install-check.yml/badge.svg)
 ![Tests](https://github.com/hummerichsander/split-flows/actions/workflows/pytest.yml/badge.svg)
 [![codecov](https://codecov.io/gh/hummerichsander/split-flows/branch/public/graph/badge.svg)](https://codecov.io/gh/hummerichsander/split-flows)
