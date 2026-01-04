@@ -35,6 +35,18 @@ To install the project dependencies use uv (if you have not installed uv yet, ch
 uv sync
 ```
 
+## Usage
+
+Model training can is done using the [hydrantic package](https://github.com/hummerichsander/hydrantic), which bundles pytorch-lightning, hydra and pydantic for model specification and training.
+
+To let hydrantic know about the location of the configuration files you can set the environment variable `HYDRANTIC_CONFIG_PATH` to the path of the `config` directory.
+
+Training a model can be done using the `hydrantic` command line interface, e.g., to train a model for alanine dipeptide (ala2.yml) run:
+
+```bash
+python -m hydrantic.cli.fit --config-name ala2
+```
+
 ## Citation
 
 If you use split-flows in your research, please cite:
