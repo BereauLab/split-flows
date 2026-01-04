@@ -9,6 +9,7 @@ dependencies = [
     "hydrantic",
     "mdtraj>=1.10.3",
     "moleculekit>=1.11.1",
+    "ruff>=0.14.10",
     "scienceplots>=2.2.0",
     "scikit-learn>=1.7.2",
     "torchdiffeq==0.2.5",
@@ -16,3 +17,11 @@ dependencies = [
 
 [tool.uv.sources]
 hydrantic = { git = "https://github.com/hummerichsander/hydrantic.git" }
+
+[tool.ruff]
+exclude = [
+    "tests",
+    ".venv",
+    "__pycache__",
+    "*.egg-info",
+]
