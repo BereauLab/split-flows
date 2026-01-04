@@ -9,6 +9,8 @@ dependencies = [
     "hydrantic",
     "mdtraj>=1.10.3",
     "moleculekit>=1.11.1",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
     "ruff>=0.14.10",
     "scienceplots>=2.2.0",
     "scikit-learn>=1.7.2",

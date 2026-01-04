@@ -29,7 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync
+          uv sync --all-extras --dev
 
       - name: Run pytest with coverage
         run: |
