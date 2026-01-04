@@ -1,0 +1,36 @@
+name: UV Environment Installation Check
+
+on:
+  push:
+    branches: [public]
+  pull_request:
+    branches: [public]
+
+jobs:
+  check-uv-install:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Verify uv installation
+        run: uv --version
+
+      - name: Create and sync uv environment
+        run: |
+          uv sync
+
+      - name: Verify environment
+        run: |
+          uv run python --version
