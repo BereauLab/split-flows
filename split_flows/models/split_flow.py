@@ -14,14 +14,17 @@ from torch import Tensor
 import torch.nn as nn
 from torch.distributions import Distribution
 
-from egnn_pytorch import EGNN_Network
+import mdtraj as md
+from moleculekit.molecule import Molecule
+
+from egnn_pytorch import EGNN_Network, EGNN
 from sklearn.mixture import GaussianMixture
 from hydrantic.model import Model, ModelHparams
-from moleculekit.molecule import Molecule
 
 from split_flows.utils.interpolant import Interpolation, Interpolant
 from split_flows.mixins.continuous_flow import ContinuousFlowMixin
 from split_flows.utils.utils import to_one_hot, sum_except_batch, match_dims
+from split_flows.utils.metrics import graph_edit_distance
 
 
 logging.basicConfig(level=logging.INFO)
@@ -72,9 +75,9 @@ class NoiseAugmentation(Distribution):
         :return: Full set of coordinates with noise."""
 
         z = torch.empty((R.shape[0], self.num_particles, R.shape[2]), device=R.device)
-        z_gmm = torch.tensor(
-            gmm.sample(R.shape[0])[0], dtype=R.dtype, device=R.device
-        ).view(R.shape[0], -1, 3)
+        z_gmm = torch.tensor(gmm.sample(R.shape[0])[0], dtype=R.dtype, device=R.device).view(
+            R.shape[0], -1, 3
+        )
 
         start_idx = 0
         for i, (cg_idx, noise_idx) in enumerate(self.latent_groupings):
@@ -115,9 +118,7 @@ class NoiseAugmentation(Distribution):
             R_cg = value[:, cg_idx, :]
             R_noise = value[:, noise_idx, :]
             exponential_term = (
-                -0.5
-                * sum_except_batch((R_noise - R_cg[:, None, :]) ** 2)
-                / self.scale**2
+                -0.5 * sum_except_batch((R_noise - R_cg[:, None, :]) ** 2) / self.scale**2
             )
             normalization_term = -torch.log(Z) * R_noise.shape[1]
             log_prob += exponential_term + normalization_term
@@ -150,12 +151,55 @@ class VelocityNet(nn.Module):
         self.atom_embedding = nn.Linear(atom_types.size(-1), self.dim)
         self.bead_embedding = nn.Linear(bead_types.size(-1), self.dim)
 
+        self._init_weights()
+
     def forward(self, x: Tensor, t: Tensor) -> Tensor:
         atom_embeddings = self.atom_embedding(self.atom_types).repeat(x.size(0), 1, 1)
         bead_embeddings = self.bead_embedding(self.bead_types).repeat(x.size(0), 1, 1)
         t = match_dims(t, x).repeat(1, x.shape[1], 1)
         h = torch.cat([atom_embeddings, bead_embeddings, t], dim=-1)
         return self.net(h + torch.randn_like(h), x)[1]
+
+    def _init_weights(self):
+        """Initialize weights following EGNN best practices.
+
+        - Message MLPs (phi_e, phi_h): Xavier uniform
+        - Coordinate MLP last layer: scaled down by 0.01
+        - Biases: zero initialization
+        - Embedding layers: Xavier uniform
+        """
+
+        # Initialize embedding layers with Xavier uniform
+        nn.init.xavier_uniform_(self.atom_embedding.weight)
+        nn.init.zeros_(self.atom_embedding.bias)
+        nn.init.xavier_uniform_(self.bead_embedding.weight)
+        nn.init.zeros_(self.bead_embedding.bias)
+
+        # Initialize EGNN layers
+        for layer in self.net.layers:
+            if isinstance(layer, EGNN):
+                # Message MLPs (phi_e, phi_h) - Xavier uniform
+                for module in [layer.edge_mlp, layer.node_mlp]:
+                    for m in module.modules():
+                        if isinstance(m, nn.Linear):
+                            nn.init.xavier_uniform_(m.weight)
+                            if m.bias is not None:
+                                nn.init.zeros_(m.bias)
+
+                # Coordinate MLP - Xavier uniform for all but last layer
+                coord_mlp_layers = list(layer.coors_mlp.modules())
+                linear_layers = [m for m in coord_mlp_layers if isinstance(m, nn.Linear)]
+
+                for i, m in enumerate(linear_layers):
+                    if i == len(linear_layers) - 1:
+                        # Last layer: scale down by 0.01
+                        nn.init.xavier_uniform_(m.weight)
+                        m.weight.data *= 0.01
+                    else:
+                        nn.init.xavier_uniform_(m.weight)
+
+                    if m.bias is not None:
+                        nn.init.zeros_(m.bias)
 
 
 class SplitFlowHparams(ModelHparams):
@@ -181,12 +225,14 @@ class SplitFlowHparams(ModelHparams):
 class SplitFlow(Model[SplitFlowHparams], ContinuousFlowMixin):
     hparams_schema = SplitFlowHparams
 
-    def __init__(self, thparams: SplitFlowHparams):
-        super(SplitFlow, self).__init__(thparams)
+    def __init__(self, hparams: SplitFlowHparams):
+        super(SplitFlow, self).__init__(hparams)
 
         # Load the all-atom and coarse-grained topologies
         self.mol_aa = Molecule(self.thparams.aa_topology_path)
         self.mol_cg = Molecule(self.thparams.cg_topology_path)
+        self.top_aa = md.load_topology(self.thparams.aa_topology_path)
+        self.top_cg = md.load_topology(self.thparams.cg_topology_path)
 
         # Define the CG mapping
         if not hasattr(self.thparams, "cg_map_matrix_path"):
@@ -266,9 +312,7 @@ class SplitFlow(Model[SplitFlowHparams], ContinuousFlowMixin):
 
         return self.velo_net(xt, t)
 
-    def compute_metrics(
-        self, batch: tuple[Tensor, ...], batch_idx: int
-    ) -> dict[str, Tensor]:
+    def compute_metrics(self, batch: tuple[Tensor, ...], batch_idx: int) -> dict[str, Tensor]:
         """Compute training/validation metrics.
 
         :param batch: Batch data tuple, expecting (r,) where r is a Tensor.
@@ -290,6 +334,11 @@ class SplitFlow(Model[SplitFlowHparams], ContinuousFlowMixin):
         # flow matching loss
         metrics["loss_fm"] = sum_except_batch(torch.pow(vt_hat - vt, 2)).mean()
         metrics["loss"] += metrics["loss_fm"]
+
+        if not self.training:
+            x1 = self.compute_flow(x0, return_intermediate=False, verbose=False)
+            traj = md.Trajectory(x1.cpu().numpy(), self.top_aa)
+            metrics["ged"] = torch.mean(torch.tensor(graph_edit_distance(traj=traj, verbose=False)))
 
         return metrics
 
@@ -322,3 +371,36 @@ class SplitFlow(Model[SplitFlowHparams], ContinuousFlowMixin):
         noise_indices = torch.tensor(noise_list, device=self.device, dtype=torch.long)
 
         return cg_indices, noise_indices
+
+    def fit_latent_gmm(
+        self,
+        r: Tensor,
+        n_components: int,
+        chunk_size: int | None = None,
+        verbose: bool = False,
+        *args,
+        **kwargs,
+    ) -> GaussianMixture:
+        """Fit a Gaussian Mixture Model to the latent representations of the fine-grained data.
+
+        :param r: fine-grained configurations
+        :param n_components: number of GMM components
+        :param chunk_size: chunk size for processing data in batches
+        :param verbose: whether to display a progress bar
+        :param args: additional arguments for GaussianMixture
+        :param kwargs: additional keyword arguments for GaussianMixture
+        :return: fitted GMM"""
+
+        from sklearn.mixture import GaussianMixture
+
+        with torch.no_grad():
+            x1 = r.to(self.device)
+            x0 = self.compute_flow(x1, reverse=True, chunk_size=chunk_size, verbose=verbose).cpu()
+            eps_sn = self.noise.to_standard_normal(x0)[:, self.indices_split[1].cpu(), :].view(
+                x0.shape[0], -1
+            )
+
+        gmm = GaussianMixture(n_components=n_components, *args, **kwargs)
+        gmm.fit(eps_sn.numpy())
+
+        return gmm
