@@ -34,19 +34,19 @@ model_config:
   scheduler:
     #module_name: torch.optim.lr_scheduler.ExponentialLR
     #kwargs:
-    #  gamma: 0.997
+    #  gamma: 0.999
     module_name: torch.optim.lr_scheduler.OneCycleLR
     kwargs:
       max_lr: 0.0003
       total_steps: 2000
       steps_per_epoch: 1
-      # div_factor: 10.0
+      div_factor: 10.0
 
   checkpoint:
     monitor: validation/loss
     save_last: true
     save_top_k: 5
-    save_every_n_epochs: 1
+    save_every_n_epochs: 10
 
 run_config:
   trainer:
@@ -55,18 +55,18 @@ run_config:
     precision: 32 # model weight precision (should be the same as dataset precision)
 
   logger:
-    project: ConnectingResolutions # name of the project in your w&b profile
+    project: SplitFlows # name of the project in your w&b profile
     log_model: true # whether to log the model to w&b
     offline: false # whether to upload the logs to w&b
 
 data_config:
   module_name: split_flows.dataset.MDTrajectoryData
-  trajectory_path: data/cln/md_simulations/temperature=360K_timestep=2ps/chignolin_trajectory.dcd
-  topology_path: data/cln/cln_in_water.pdb
-  remove_solvent: True
+  trajectory_path: data/cln/cln_heavy_atoms.dcd
+  topology_path: data/cln/cln_heavy_atoms.pdb
+  remove_solvent: False
   superpose: True
   center_coordinates: True
-  prune_hydrogens: True
+  prune_hydrogens: False
   stride: 10
   loader:
     batch_size: 64

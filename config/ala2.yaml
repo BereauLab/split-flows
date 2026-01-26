@@ -42,15 +42,15 @@ run_config:
     precision: 32 # model weight precision (should be the same as dataset precision)
 
   logger:
-    project: ConnectingResolutions # name of the project in your w&b profile
+    project: SplitFlows # name of the project in your w&b profile
     log_model: true # whether to log the model to w&b
     offline: false # whether to upload the logs to w&b
 
 data_config:
   module_name: split_flows.dataset.MDTrajectoryData
-  trajectory_path: data/ala2/md_simulations/temperature=600K_timestep=2ps/alanine_dipeptide_trajectory.dcd
-  topology_path: data/ala2/ala2_in_water.pdb
-  remove_solvent: True
+  trajectory_path: data/ala2/ala2.dcd
+  topology_path: data/ala2/ala2.pdb
+  remove_solvent: False
   superpose: True
   center_coordinates: True
   prune_hydrogens: False
@@ -63,7 +63,7 @@ data_config:
 
 hydra:
   job:
-    name: AlanineDipeptideRamachandranSplitFlow
+    name: Ala2SplitFlow
   run:
     dir: lightning_logs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
   sweep:

@@ -3,6 +3,8 @@ lightning_logs/
 .github/
 data/
 checkpoints/
+slurm/
+visuals/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
