@@ -80,5 +80,7 @@ def gradient(
 
     if grad_outputs is None:
         grad_outputs = torch.ones_like(output).detach()
-    grad = torch.autograd.grad(output, x, grad_outputs=grad_outputs, create_graph=create_graph)[0]
+    grad = torch.autograd.grad(
+        output, x, grad_outputs=grad_outputs, create_graph=create_graph
+    )[0]
     return grad

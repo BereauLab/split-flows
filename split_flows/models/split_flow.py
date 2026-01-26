@@ -75,9 +75,9 @@ class NoiseAugmentation(Distribution):
         :return: Full set of coordinates with noise."""
 
         z = torch.empty((R.shape[0], self.num_particles, R.shape[2]), device=R.device)
-        z_gmm = torch.tensor(gmm.sample(R.shape[0])[0], dtype=R.dtype, device=R.device).view(
-            R.shape[0], -1, 3
-        )
+        z_gmm = torch.tensor(
+            gmm.sample(R.shape[0])[0], dtype=R.dtype, device=R.device
+        ).view(R.shape[0], -1, 3)
 
         start_idx = 0
         for i, (cg_idx, noise_idx) in enumerate(self.latent_groupings):
@@ -118,7 +118,9 @@ class NoiseAugmentation(Distribution):
             R_cg = value[:, cg_idx, :]
             R_noise = value[:, noise_idx, :]
             exponential_term = (
-                -0.5 * sum_except_batch((R_noise - R_cg[:, None, :]) ** 2) / self.scale**2
+                -0.5
+                * sum_except_batch((R_noise - R_cg[:, None, :]) ** 2)
+                / self.scale**2
             )
             normalization_term = -torch.log(Z) * R_noise.shape[1]
             log_prob += exponential_term + normalization_term
@@ -188,7 +190,9 @@ class VelocityNet(nn.Module):
 
                 # Coordinate MLP - Xavier uniform for all but last layer
                 coord_mlp_layers = list(layer.coors_mlp.modules())
-                linear_layers = [m for m in coord_mlp_layers if isinstance(m, nn.Linear)]
+                linear_layers = [
+                    m for m in coord_mlp_layers if isinstance(m, nn.Linear)
+                ]
 
                 for i, m in enumerate(linear_layers):
                     if i == len(linear_layers) - 1:
@@ -312,7 +316,9 @@ class SplitFlow(Model[SplitFlowHparams], ContinuousFlowMixin):
 
         return self.velo_net(xt, t)
 
-    def compute_metrics(self, batch: tuple[Tensor, ...], batch_idx: int) -> dict[str, Tensor]:
+    def compute_metrics(
+        self, batch: tuple[Tensor, ...], batch_idx: int
+    ) -> dict[str, Tensor]:
         """Compute training/validation metrics.
 
         :param batch: Batch data tuple, expecting (r,) where r is a Tensor.
@@ -337,8 +343,10 @@ class SplitFlow(Model[SplitFlowHparams], ContinuousFlowMixin):
 
         if not self.training:
             x1 = self.compute_flow(x0, return_intermediate=False, verbose=False)
-            traj = md.Trajectory(x1.cpu().numpy(), self.top_aa)
-            metrics["ged"] = torch.mean(torch.tensor(graph_edit_distance(traj=traj, verbose=False)))
+            traj = md.Trajectory(x1.detach().cpu().numpy(), self.top_aa)
+            metrics["ged"] = torch.mean(
+                torch.tensor(graph_edit_distance(traj=traj, verbose=False))
+            )
 
         return metrics
 
@@ -395,10 +403,12 @@ class SplitFlow(Model[SplitFlowHparams], ContinuousFlowMixin):
 
         with torch.no_grad():
             x1 = r.to(self.device)
-            x0 = self.compute_flow(x1, reverse=True, chunk_size=chunk_size, verbose=verbose).cpu()
-            eps_sn = self.noise.to_standard_normal(x0)[:, self.indices_split[1].cpu(), :].view(
-                x0.shape[0], -1
-            )
+            x0 = self.compute_flow(
+                x1, reverse=True, chunk_size=chunk_size, verbose=verbose
+            ).cpu()
+            eps_sn = self.noise.to_standard_normal(x0)[
+                :, self.indices_split[1].cpu(), :
+            ].view(x0.shape[0], -1)
 
         gmm = GaussianMixture(n_components=n_components, *args, **kwargs)
         gmm.fit(eps_sn.numpy())

@@ -147,7 +147,9 @@ def compute_bond_cutoff_mdtraj(topology, scale=1.3):
     """Compute bond cutoffs for MDTraj topology"""
     atomic_nums = [atom.element.atomic_number for atom in topology.atoms]
     # COVCUTOFFTABLE values are in Angstroms, convert to nanometers for MDTraj
-    vdw_array = torch.Tensor([COVCUTOFFTABLE[int(el)] / 10.0 for el in atomic_nums])  # Å to nm
+    vdw_array = torch.Tensor(
+        [COVCUTOFFTABLE[int(el)] / 10.0 for el in atomic_nums]
+    )  # Å to nm
 
     cutoff_array = (vdw_array[None, :] + vdw_array[:, None]) * scale
 
