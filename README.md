@@ -17,7 +17,7 @@
 Split-flows provide a probabilistic bridge between molecular resolutions, enabling conditional backmapping and direct measurement of the configuration-dependent (local) information loss.
 
 <div align="center">
-    <img src="figures/flow_trajectory.gif" alt="Flow Trajectory" style="max-width: 300px; width: 100%;">
+    <img src="figures/flow_trajectory.gif" alt="Flow Trajectory" style="max-width: 300px; width: 50%;">
 </div>
 
 ## Installation
