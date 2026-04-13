@@ -36,7 +36,6 @@ jobs:
       - name: Generate coverage badge
         if: matrix.python-version == '3.11'
         run: |
-          uv run python -m pip install -U "genbadge[coverage]"
           uv run genbadge coverage -i coverage.xml -o coverage-badge.svg
 
       - name: Upload coverage to Codecov
