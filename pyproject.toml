@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "egnn-pytorch==0.2.8",
-    "hydrantic",
+    "hydrantic==0.0.2",
     "mdtraj>=1.10.3",
     "moleculekit>=1.11.1",
     "openmm>=8.4.0.post2",
@@ -21,6 +21,11 @@ dependencies = [
 
 [tool.uv.sources]
 hydrantic = { git = "https://github.com/hummerichsander/hydrantic.git" }
+
+[dependency-groups]
+dev = [
+    "genbadge[coverage]",
+]
 
 [tool.ruff]
 exclude = [

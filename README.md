@@ -3,9 +3,8 @@
 <div align="center">
 
 ![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)
-![UV Install Check](https://github.com/hummerichsander/split-flows/actions/workflows/uv-install-check.yml/badge.svg)
-![Tests](https://github.com/hummerichsander/split-flows/actions/workflows/pytest.yml/badge.svg)
-[![codecov](https://codecov.io/gh/hummerichsander/split-flows/branch/public/graph/badge.svg)](https://codecov.io/gh/hummerichsander/split-flows)
+![Tests](https://github.com/BereauLab/split-flows/actions/workflows/pytest.yml/badge.svg)
+[![codecov](https://codecov.io/gh/BereauLab/split-flows/branch/public/graph/badge.svg)](https://codecov.io/gh/BereauLab/split-flows)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![arXiv](https://img.shields.io/badge/arXiv-2511.01464-b31b1b.svg)](https://arxiv.org/abs/2511.01464)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
