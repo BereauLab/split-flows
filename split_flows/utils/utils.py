@@ -65,8 +65,8 @@ def to_one_hot(
 
 
 def gradient(
-    output: Tensor,
-    x: Tensor,
+    output: Tensor,     #velocity field
+    x: Tensor,          #the position of system at time t
     grad_outputs: Tensor | None = None,
     create_graph: bool = False,
 ) -> Tensor:
@@ -84,3 +84,46 @@ def gradient(
         output, x, grad_outputs=grad_outputs, create_graph=create_graph
     )[0]
     return grad
+
+
+def hutchinson_trace(
+    output: Tensor,
+    x: Tensor,
+    num_samples: int = 100,
+) -> Tensor:
+    """Compute the trace of the Jacobian using Hutchinson trace estimator.
+    
+    Estimates tr(J) = E[z^T * J * z] where z ~ N(0, I).
+    This is much more efficient than computing the full Jacobian and avoids
+    graph retention issues with autograd.grad() in loops.  
+    
+    :param output: Output tensor (typically velocity field), shape (batch, dim)
+    :param x: Input tensor with respect to which Jacobian is computed, shape (batch, dim)
+    :param num_samples: Number of random samples for trace estimation (default: 100)
+    :return: Estimated trace (divergence) for each sample in batch, shape (batch,)
+    """
+    batch_size, dim = output.shape
+    trace_estimate = torch.zeros(batch_size, device=output.device, dtype=output.dtype)
+    
+    for i in range(num_samples):
+        # Sample random vector z ~ N(0, I)
+        z = torch.randn_like(output)
+        
+        #only retain graph if the output is needed for the next iteration:
+        is_last_sample = (i == num_samples - 1)
+
+        # Compute z^T * J by computing gradients of (output * z).sum()
+        # This gives us one row of the Jacobian contracted with z
+        jvp = torch.autograd.grad(
+            outputs=output,
+            inputs=x,
+            grad_outputs=z,
+            create_graph=False,
+            retain_graph=not is_last_sample,
+        )[0]
+        
+        # Compute z^T * (J * z) = (z * jvp).sum(dim=-1)
+        # This estimates one sample of tr(J)
+        trace_estimate += (z * jvp).sum(dim=-1)
+    
+    return trace_estimate / num_samples
